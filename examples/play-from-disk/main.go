@@ -15,11 +15,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/examples/internal/signal"
-	"github.com/pion/webrtc/v3/pkg/media"
-	"github.com/pion/webrtc/v3/pkg/media/ivfreader"
-	"github.com/pion/webrtc/v3/pkg/media/oggreader"
+	"github.com/viamrobotics/webrtc/v3"
+	"github.com/viamrobotics/webrtc/v3/examples/internal/signal"
+	"github.com/viamrobotics/webrtc/v3/pkg/media"
+	"github.com/viamrobotics/webrtc/v3/pkg/media/ivfreader"
+	"github.com/viamrobotics/webrtc/v3/pkg/media/oggreader"
 )
 
 const (

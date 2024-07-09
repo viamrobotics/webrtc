@@ -16,7 +16,7 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/sdp/v3"
-	"github.com/pion/webrtc/v3/internal/fmtp"
+	"github.com/viamrobotics/webrtc/v3/internal/fmtp"
 )
 
 const (

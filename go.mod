@@ -1,4 +1,4 @@
-module github.com/pion/webrtc/v3
+module github.com/viamrobotics/webrtc/v3
 
 go 1.17
 
