@@ -56,7 +56,6 @@ type PeerConnection struct {
 	idpLoginURL *string
 
 	isClosed                                *atomicBool
-	isClosedDone                            chan struct{}
 	isNegotiationNeeded                     *atomicBool
 	updateNegotiationNeededFlagOnEmptyChain *atomicBool
 
@@ -69,7 +68,8 @@ type PeerConnection struct {
 	// should be defined (see JSEP 3.4.1).
 	greaterMid int
 
-	rtpTransceivers []*RTPTransceiver
+	rtpTransceivers        []*RTPTransceiver
+	nonMediaBandwidthProbe atomic.Value // RTPReceiver
 
 	onSignalingStateChangeHandler     func(SignalingState)
 	onICEConnectionStateChangeHandler atomic.Value // func(ICEConnectionState)
@@ -128,7 +128,6 @@ func (api *API) NewPeerConnection(configuration Configuration) (*PeerConnection,
 			ICECandidatePoolSize: 0,
 		},
 		isClosed:                                &atomicBool{},
-		isClosedDone:                            make(chan struct{}),
 		isNegotiationNeeded:                     &atomicBool{},
 		updateNegotiationNeededFlagOnEmptyChain: &atomicBool{},
 		lastOffer:                               "",
@@ -1512,6 +1511,32 @@ func (pc *PeerConnection) handleUndeclaredSSRC(ssrc SSRC, remoteDescription *Ses
 	return true, nil
 }
 
+// Chrome sends probing traffic on SSRC 0. This reads the packets to ensure that we properly
+// generate TWCC reports for it. Since this isn't actually media we don't pass this to the user
+func (pc *PeerConnection) handleNonMediaBandwidthProbe() {
+	nonMediaBandwidthProbe, err := pc.api.NewRTPReceiver(RTPCodecTypeVideo, pc.dtlsTransport)
+	if err != nil {
+		pc.log.Errorf("handleNonMediaBandwidthProbe failed to create RTPReceiver: %v", err)
+		return
+	}
+
+	if err = nonMediaBandwidthProbe.Receive(RTPReceiveParameters{
+		Encodings: []RTPDecodingParameters{{RTPCodingParameters: RTPCodingParameters{}}},
+	}); err != nil {
+		pc.log.Errorf("handleNonMediaBandwidthProbe failed to start RTPReceiver: %v", err)
+		return
+	}
+
+	pc.nonMediaBandwidthProbe.Store(nonMediaBandwidthProbe)
+	b := make([]byte, pc.api.settingEngine.getReceiveMTU())
+	for {
+		if _, _, err = nonMediaBandwidthProbe.readRTP(b, nonMediaBandwidthProbe.Track()); err != nil {
+			pc.log.Tracef("handleNonMediaBandwidthProbe read exiting: %v", err)
+			return
+		}
+	}
+}
+
 func (pc *PeerConnection) handleIncomingSSRC(rtpStream io.Reader, ssrc SSRC) error { //nolint:gocognit
 	remoteDescription := pc.RemoteDescription()
 	if remoteDescription == nil {
@@ -1631,20 +1656,41 @@ func (pc *PeerConnection) undeclaredRTPMediaProcessor() {
 			return
 		}
 
-		stream, ssrc, err := srtpSession.AcceptStream()
+		srtcpSession, err := pc.dtlsTransport.getSRTCPSession()
+		if err != nil {
+			pc.log.Warnf("undeclaredMediaProcessor failed to open SrtcpSession: %v", err)
+			return
+		}
+
+		srtpReadStream, ssrc, err := srtpSession.AcceptStream()
 		if err != nil {
 			pc.log.Warnf("Failed to accept RTP %v", err)
 			return
 		}
 
+		// open accompanying srtcp stream
+		srtcpReadStream, err := srtcpSession.OpenReadStream(ssrc)
+		if err != nil {
+			pc.log.Warnf("Failed to open RTCP stream for %d: %v", ssrc, err)
+			return
+		}
+
 		if pc.isClosed.get() {
-			if err = stream.Close(); err != nil {
+			if err = srtpReadStream.Close(); err != nil {
 				pc.log.Warnf("Failed to close RTP stream %v", err)
+			}
+			if err = srtcpReadStream.Close(); err != nil {
+				pc.log.Warnf("Failed to close RTCP stream %v", err)
 			}
 			continue
 		}
 
-		pc.dtlsTransport.storeSimulcastStream(stream)
+		pc.dtlsTransport.storeSimulcastStream(srtpReadStream, srtcpReadStream)
+
+		if ssrc == 0 {
+			go pc.handleNonMediaBandwidthProbe()
+			continue
+		}
 
 		if atomic.AddUint64(&simulcastRoutineCount, 1) >= simulcastMaxProbeRoutines {
 			atomic.AddUint64(&simulcastRoutineCount, ^uint64(0))
@@ -1657,7 +1703,7 @@ func (pc *PeerConnection) undeclaredRTPMediaProcessor() {
 				pc.log.Errorf(incomingUnhandledRTPSsrc, ssrc, err)
 			}
 			atomic.AddUint64(&simulcastRoutineCount, ^uint64(0))
-		}(stream, SSRC(ssrc))
+		}(srtpReadStream, SSRC(ssrc))
 	}
 }
 
@@ -2022,31 +2068,14 @@ func (pc *PeerConnection) writeRTCP(pkts []rtcp.Packet, _ interceptor.Attributes
 	return pc.dtlsTransport.WriteRTCP(pkts)
 }
 
-// Close ends the PeerConnection.
-// It will make a best effort to wait for all underlying goroutines it spawned to finish,
-// except for cases that would cause deadlocks with itself.
+// Close ends the PeerConnection
 func (pc *PeerConnection) Close() error {
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #1)
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #2)
 	if pc.isClosed.swap(true) {
-		// someone else got here first but may still be closing (e.g. via DTLS close_notify)
-		<-pc.isClosedDone
 		return nil
 	}
-	defer close(pc.isClosedDone)
 
-	// Try closing everything and collect the errors
-	// Shutdown strategy:
-	// 1. Close all data channels.
-	// 2. All Conn close by closing their underlying Conn.
-	// 3. A Mux stops this chain. It won't close the underlying
-	//    Conn if one of the endpoints is closed down. To
-	//    continue the chain the Mux has to be closed.
-	pc.sctpTransport.lock.Lock()
-	closeErrs := make([]error, 0, 4+len(pc.sctpTransport.dataChannels))
-	pc.sctpTransport.lock.Unlock()
-
-	// canon steps
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #3)
 	pc.signalingState.Set(SignalingStateClosed)
 
@@ -2056,6 +2085,7 @@ func (pc *PeerConnection) Close() error {
 	// 2. A Mux stops this chain. It won't close the underlying
 	//    Conn if one of the endpoints is closed down. To
 	//    continue the chain the Mux has to be closed.
+	closeErrs := make([]error, 4)
 
 	closeErrs = append(closeErrs, pc.api.interceptor.Close())
 
@@ -2065,6 +2095,9 @@ func (pc *PeerConnection) Close() error {
 		if !t.stopped {
 			closeErrs = append(closeErrs, t.Stop())
 		}
+	}
+	if nonMediaBandwidthProbe, ok := pc.nonMediaBandwidthProbe.Load().(*RTPReceiver); ok {
+		closeErrs = append(closeErrs, nonMediaBandwidthProbe.Stop())
 	}
 	pc.mu.Unlock()
 
@@ -2082,6 +2115,7 @@ func (pc *PeerConnection) Close() error {
 
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #7)
 	closeErrs = append(closeErrs, pc.dtlsTransport.Stop())
+
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #8, #9, #10)
 	if pc.iceTransport != nil {
 		closeErrs = append(closeErrs, pc.iceTransport.Stop())
@@ -2089,13 +2123,6 @@ func (pc *PeerConnection) Close() error {
 
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #11)
 	pc.updateConnectionState(pc.ICEConnectionState(), pc.dtlsTransport.State())
-
-	// non-canon steps
-	pc.sctpTransport.lock.Lock()
-	for _, d := range pc.sctpTransport.dataChannels {
-		closeErrs = append(closeErrs, d.close(true))
-	}
-	pc.sctpTransport.lock.Unlock()
 
 	return util.FlattenErrs(closeErrs)
 }
@@ -2457,7 +2484,9 @@ func (pc *PeerConnection) generateMatchedSDP(transceivers []*RTPTransceiver, use
 				sender.setNegotiated()
 			}
 			mediaTransceivers := []*RTPTransceiver{t}
-			mediaSections = append(mediaSections, mediaSection{id: midValue, transceivers: mediaTransceivers, ridMap: getRids(media)})
+
+			extensions, _ := rtpExtensionsFromMediaDescription(media)
+			mediaSections = append(mediaSections, mediaSection{id: midValue, transceivers: mediaTransceivers, matchExtensions: extensions, ridMap: getRids(media)})
 		}
 	}
 

@@ -28,10 +28,10 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/sdp/v3"
 	"github.com/pion/transport/v2/test"
-	"github.com/viamrobotics/webrtc/v3/internal/util"
-	"github.com/viamrobotics/webrtc/v3/pkg/media"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/viamrobotics/webrtc/v3/internal/util"
+	"github.com/viamrobotics/webrtc/v3/pkg/media"
 )
 
 var (
@@ -1115,6 +1115,9 @@ func TestPeerConnection_Simulcast_Probe(t *testing.T) {
 			return
 		}))
 
+		peerConnectionConnected := untilConnectionState(PeerConnectionStateConnected, pcOffer, pcAnswer)
+		peerConnectionConnected.Wait()
+
 		sequenceNumber := uint16(0)
 		sendRTPPacket := func() {
 			sequenceNumber++
@@ -1354,7 +1357,7 @@ func TestPeerConnection_Simulcast(t *testing.T) {
 			for ssrc, rid := range rids {
 				header := &rtp.Header{
 					Version:        2,
-					SSRC:           uint32(ssrc),
+					SSRC:           uint32(ssrc + 1),
 					SequenceNumber: sequenceNumber,
 					PayloadType:    96,
 				}
@@ -1539,7 +1542,7 @@ func TestPeerConnection_Simulcast_RTX(t *testing.T) {
 					SequenceNumber: sequenceNumber,
 					PayloadType:    96,
 					Padding:        true,
-					SSRC:           uint32(i),
+					SSRC:           uint32(i + 1),
 				},
 				Payload: []byte{0x00, 0x02},
 			}
@@ -1558,7 +1561,7 @@ func TestPeerConnection_Simulcast_RTX(t *testing.T) {
 					Version:        2,
 					SequenceNumber: sequenceNumber,
 					PayloadType:    96,
-					SSRC:           uint32(i),
+					SSRC:           uint32(i + 1),
 				},
 				Payload: []byte{0x00},
 			}
@@ -1602,7 +1605,7 @@ func TestPeerConnection_Simulcast_RTX(t *testing.T) {
 					Version:        2,
 					SequenceNumber: sequenceNumber,
 					PayloadType:    96,
-					SSRC:           uint32(i),
+					SSRC:           uint32(i + 1),
 				},
 				Payload: []byte{0x00},
 			}
