@@ -2099,7 +2099,6 @@ func (pc *PeerConnection) close(shouldGracefullyClose bool) error {
 	}
 	if shouldGracefullyClose && !alreadyGracefullyClosed {
 		defer close(pc.isGracefulClosedDone)
-		pc.ops.GracefulClose()
 	}
 
 	// https://www.w3.org/TR/webrtc/#dom-rtcpeerconnection-close (step #3)
@@ -2156,6 +2155,8 @@ func (pc *PeerConnection) close(shouldGracefullyClose bool) error {
 	pc.updateConnectionState(pc.ICEConnectionState(), pc.dtlsTransport.State())
 
 	if shouldGracefullyClose {
+		pc.ops.GracefulClose()
+
 		// note that it isn't canon to stop gracefully
 		pc.sctpTransport.lock.Lock()
 		for _, d := range pc.sctpTransport.dataChannels {
