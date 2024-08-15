@@ -11,7 +11,7 @@ require (
 	github.com/pion/randutil v0.1.0
 	github.com/pion/rtcp v1.2.14
 	github.com/pion/rtp v1.8.7
-	github.com/pion/sctp v1.8.22
+	github.com/pion/sctp v1.8.33
 	github.com/pion/sdp/v3 v3.0.9
 	github.com/pion/srtp/v2 v2.0.20
 	github.com/pion/stun v0.6.1
