@@ -1,6 +1,8 @@
 module github.com/viamrobotics/webrtc/v3
 
-go 1.20
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/pion/datachannel v1.5.8
@@ -38,3 +40,5 @@ require (
 // SCTP ZeroChecksum implementation has a interoperability bug
 // 3.2.28 can only work against itself, not other versions of webrtc
 retract v3.2.28
+
+replace github.com/pion/ice/v2 => ../ice
