@@ -4,7 +4,6 @@
 package webrtc
 
 import (
-	"fmt"
 	"net"
 	"reflect"
 	"sync"
@@ -68,24 +67,6 @@ func signalPairWithModification(pcOffer *PeerConnection, pcAnswer *PeerConnectio
 	}
 	<-answerGatheringComplete
 	ret := pcOffer.SetRemoteDescription(*pcAnswer.LocalDescription())
-
-	offerLocal, err := pcOffer.iceGatherer.agent.GetLocalCandidates()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, cand := range offerLocal {
-		fmt.Printf("Offer candidate: %#v\n", cand)
-	}
-
-	answererLocal, err := pcAnswer.iceGatherer.agent.GetLocalCandidates()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, cand := range answererLocal {
-		fmt.Printf("Answerer candidates: %#v\n", cand)
-	}
 
 	return ret
 }
