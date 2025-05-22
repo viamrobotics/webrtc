@@ -66,9 +66,7 @@ func signalPairWithModification(pcOffer *PeerConnection, pcAnswer *PeerConnectio
 		return err
 	}
 	<-answerGatheringComplete
-	ret := pcOffer.SetRemoteDescription(*pcAnswer.LocalDescription())
-
-	return ret
+	return pcOffer.SetRemoteDescription(*pcAnswer.LocalDescription())
 }
 
 func signalPair(pcOffer *PeerConnection, pcAnswer *PeerConnection) error {
