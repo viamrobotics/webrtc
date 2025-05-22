@@ -764,7 +764,8 @@ func TestTCPRelayConnection(t *testing.T) {
 		return addr.IsLoopback()
 	})
 	settingEngine.SetIncludeLoopbackCandidate(true)
-	settingEngine.SetNetworkTypes([]NetworkType{NetworkTypeTCP4})
+	settingEngine.SetNetworkTypes([]NetworkType{NetworkTypeTCP4, NetworkTypeUDP4})
+	settingEngine.SetUseTCPAllocationsForLocalRelayCandidates(true)
 	api := NewAPI(WithSettingEngine(*settingEngine))
 
 	client, err := api.NewPeerConnection(Configuration{

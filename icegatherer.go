@@ -123,7 +123,7 @@ func (g *ICEGatherer) createAgent() error {
 		ProxyDialer:                              g.api.settingEngine.iceProxyDialer,
 		DisableActiveTCP:                         g.api.settingEngine.iceDisableActiveTCP,
 		BindingRequestHandler:                    g.api.settingEngine.iceBindingRequestHandler,
-		UseTCPAllocationsForLocalRelayCandidates: true,
+		UseTCPAllocationsForLocalRelayCandidates: g.api.settingEngine.candidates.UseTCPAllocationsForLocalRelayCandidates,
 	}
 
 	requestedNetworkTypes := g.api.settingEngine.candidates.ICENetworkTypes
