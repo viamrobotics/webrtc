@@ -4,6 +4,7 @@
 package webrtc
 
 import (
+	"net"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -12,8 +13,8 @@ import (
 
 	"github.com/pion/sdp/v3"
 	"github.com/pion/transport/v2/test"
-	"github.com/viamrobotics/webrtc/v3/pkg/rtcerr"
 	"github.com/stretchr/testify/assert"
+	"github.com/viamrobotics/webrtc/v3/pkg/rtcerr"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer)
@@ -753,4 +754,43 @@ func TestTransportChain(t *testing.T) {
 	assert.NotNil(t, offer.SCTP().Transport().ICETransport())
 
 	closePairNow(t, offer, answer)
+}
+
+func TestTCPRelayConnection(t *testing.T) {
+	// Assumes coturn is running. E.g:
+	//   /bin/turnserver -v -lt-cred-mech -u dan:dan -r pion.ly --allow-loopback-peers --cli-password=pw
+	t.Skip("needs coturn")
+
+	settingEngine := &SettingEngine{}
+	settingEngine.SetIPFilter(func(addr net.IP) bool {
+		return addr.IsLoopback()
+	})
+	settingEngine.SetIncludeLoopbackCandidate(true)
+	settingEngine.SetNetworkTypes([]NetworkType{NetworkTypeTCP4})
+	settingEngine.SetUseTCPAllocationsForLocalRelayCandidates(true)
+	api := NewAPI(WithSettingEngine(*settingEngine))
+
+	client, err := api.NewPeerConnection(Configuration{
+		ICEServers: []ICEServer{
+			{
+				URLs:           []string{"turn:127.0.0.1:3478?transport=tcp"},
+				Username:       "dan",
+				Credential:     "dan",
+				CredentialType: ICECredentialTypePassword,
+			},
+		},
+		ICETransportPolicy: ICETransportPolicyRelay,
+	})
+	assert.NoError(t, err)
+
+	server, err := api.NewPeerConnection(Configuration{})
+	assert.NoError(t, err)
+
+	peerConnectionsConnected := untilConnectionState(PeerConnectionStateConnected, client, server)
+
+	assert.NoError(t, signalPair(client, server))
+	peerConnectionsConnected.Wait()
+
+	assert.NotNil(t, client.SCTP().Transport().ICETransport())
+	closePairNow(t, client, server)
 }

@@ -45,17 +45,18 @@ type SettingEngine struct {
 		ICERelayAcceptanceMinWait *time.Duration
 	}
 	candidates struct {
-		ICELite                  bool
-		ICENetworkTypes          []NetworkType
-		InterfaceFilter          func(string) bool
-		IPFilter                 func(net.IP) bool
-		NAT1To1IPs               []string
-		NAT1To1IPCandidateType   ICECandidateType
-		MulticastDNSMode         ice.MulticastDNSMode
-		MulticastDNSHostName     string
-		UsernameFragment         string
-		Password                 string
-		IncludeLoopbackCandidate bool
+		ICELite                                  bool
+		ICENetworkTypes                          []NetworkType
+		InterfaceFilter                          func(string) bool
+		IPFilter                                 func(net.IP) bool
+		NAT1To1IPs                               []string
+		NAT1To1IPCandidateType                   ICECandidateType
+		MulticastDNSMode                         ice.MulticastDNSMode
+		MulticastDNSHostName                     string
+		UsernameFragment                         string
+		Password                                 string
+		IncludeLoopbackCandidate                 bool
+		UseTCPAllocationsForLocalRelayCandidates bool
 	}
 	replayProtection struct {
 		DTLS  *uint
@@ -234,6 +235,10 @@ func (e *SettingEngine) SetNAT1To1IPs(ips []string, candidateType ICECandidateTy
 // for some VM have public IP mapped to loopback interface
 func (e *SettingEngine) SetIncludeLoopbackCandidate(include bool) {
 	e.candidates.IncludeLoopbackCandidate = include
+}
+
+func (e *SettingEngine) SetUseTCPAllocationsForLocalRelayCandidates(use bool) {
+	e.candidates.UseTCPAllocationsForLocalRelayCandidates = use
 }
 
 // SetAnsweringDTLSRole sets the DTLS role that is selected when offering
