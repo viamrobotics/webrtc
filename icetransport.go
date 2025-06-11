@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pion/ice/v2"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/logging"
 	"github.com/viamrobotics/webrtc/v3/internal/mux"
 	"github.com/viamrobotics/webrtc/v3/internal/util"
