@@ -161,7 +161,7 @@ func (e *SettingEngine) SetRelayAcceptanceMinWait(t time.Duration) {
 // ICE UDP connections can allocate from. This affects both host candidates,
 // and the local address of server reflexive candidates.
 //
-// When portMin and portMax are left to the 0 default value, pion/ice candidate
+// When portMin and portMax are left to the 0 default value, viamrobotics/ice candidate
 // gatherer replaces them and uses 1 for portMin and 65535 for portMax.
 func (e *SettingEngine) SetEphemeralUDPPortRange(portMin, portMax uint16) error {
 	if portMax < portMin {
@@ -256,7 +256,7 @@ func (e *SettingEngine) SetAnsweringDTLSRole(role DTLSRole) error {
 	return nil
 }
 
-// SetVNet sets the VNet instance that is passed to pion/ice
+// SetVNet sets the VNet instance that is passed to viamrobotics/ice
 //
 // VNet is a virtual network layer for Pion, allowing users to simulate
 // different topologies, latency, loss and jitter. This can be useful for
@@ -266,7 +266,7 @@ func (e *SettingEngine) SetVNet(vnet *vnet.Net) {
 	e.SetNet(vnet)
 }
 
-// SetNet sets the Net instance that is passed to pion/ice
+// SetNet sets the Net instance that is passed to viamrobotics/ice
 //
 // Net is an network interface layer for Pion, allowing users to replace
 // Pions network stack with a custom implementation.
@@ -274,12 +274,12 @@ func (e *SettingEngine) SetNet(net transport.Net) {
 	e.net = net
 }
 
-// SetICEMulticastDNSMode controls if pion/ice queries and generates mDNS ICE Candidates
+// SetICEMulticastDNSMode controls if viamrobotics/ice queries and generates mDNS ICE Candidates
 func (e *SettingEngine) SetICEMulticastDNSMode(multicastDNSMode ice.MulticastDNSMode) {
 	e.candidates.MulticastDNSMode = multicastDNSMode
 }
 
-// SetMulticastDNSHostName sets a static HostName to be used by pion/ice instead of generating one on startup
+// SetMulticastDNSHostName sets a static HostName to be used by viamrobotics/ice instead of generating one on startup
 //
 // This should only be used for a single PeerConnection. Having multiple PeerConnections with the same HostName will cause
 // undefined behavior
@@ -287,7 +287,7 @@ func (e *SettingEngine) SetMulticastDNSHostName(hostName string) {
 	e.candidates.MulticastDNSHostName = hostName
 }
 
-// SetICECredentials sets a staic uFrag/uPwd to be used by pion/ice
+// SetICECredentials sets a staic uFrag/uPwd to be used by viamrobotics/ice
 //
 // This is useful if you want to do signalless WebRTC session, or having a reproducible environment with static credentials
 func (e *SettingEngine) SetICECredentials(usernameFragment, password string) {

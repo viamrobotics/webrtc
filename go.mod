@@ -19,7 +19,7 @@ require (
 	github.com/pion/transport/v2 v2.2.10
 	github.com/sclevine/agouti v3.0.0+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/viamrobotics/ice/v2 v2.3.36
+	github.com/viamrobotics/ice/v2 v2.3.37
 	golang.org/x/net v0.22.0
 )
 
@@ -28,7 +28,6 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
-	github.com/pion/ice/v2 v2.3.37 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
