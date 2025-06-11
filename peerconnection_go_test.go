@@ -22,12 +22,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/transport/v2/test"
 	"github.com/pion/transport/v2/vnet"
+	"github.com/stretchr/testify/assert"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/viamrobotics/webrtc/v3/internal/util"
 	"github.com/viamrobotics/webrtc/v3/pkg/rtcerr"
-	"github.com/stretchr/testify/assert"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer) using

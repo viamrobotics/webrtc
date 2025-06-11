@@ -117,6 +117,7 @@ func (c ICECandidate) toICE() (ice.Candidate, error) {
 			Network:     c.Protocol.String(),
 			Address:     c.Address,
 			Port:        int(c.Port),
+			TCPType:     ice.NewTCPType(c.TCPType),
 			Component:   c.Component,
 			Foundation:  c.Foundation,
 			Priority:    c.Priority,
