@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/pion/dtls/v2/pkg/crypto/elliptic"
-	"github.com/pion/ice/v2"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/stun"
 	"github.com/pion/transport/v2/test"
 	"github.com/stretchr/testify/assert"

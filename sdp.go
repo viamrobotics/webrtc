@@ -15,7 +15,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/pion/ice/v2"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/logging"
 	"github.com/pion/sdp/v3"
 )

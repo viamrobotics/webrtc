@@ -1,11 +1,12 @@
 module github.com/viamrobotics/webrtc/v3
 
-go 1.20
+go 1.23
+
+toolchain go1.23.2
 
 require (
 	github.com/pion/datachannel v1.5.8
 	github.com/pion/dtls/v2 v2.2.12
-	github.com/pion/ice/v2 v2.3.34
 	github.com/pion/interceptor v0.1.29
 	github.com/pion/logging v0.2.2
 	github.com/pion/randutil v0.1.0
@@ -18,6 +19,7 @@ require (
 	github.com/pion/transport/v2 v2.2.10
 	github.com/sclevine/agouti v3.0.0+incompatible
 	github.com/stretchr/testify v1.9.0
+	github.com/viamrobotics/ice/v2 v2.3.36
 	golang.org/x/net v0.22.0
 )
 
@@ -26,6 +28,7 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.17.0 // indirect
+	github.com/pion/ice/v2 v2.3.37 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -10,7 +10,7 @@ package webrtc
 import (
 	"syscall/js"
 
-	"github.com/pion/ice/v2"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/viamrobotics/webrtc/v3/pkg/rtcerr"
 )
 

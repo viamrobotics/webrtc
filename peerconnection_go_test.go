@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pion/ice/v2"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/transport/v2/test"
 	"github.com/pion/transport/v2/vnet"
 	"github.com/viamrobotics/webrtc/v3/internal/util"
