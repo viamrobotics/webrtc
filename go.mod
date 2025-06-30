@@ -19,7 +19,7 @@ require (
 	github.com/pion/transport/v2 v2.2.10
 	github.com/sclevine/agouti v3.0.0+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/viamrobotics/ice/v2 v2.3.37
+	github.com/viamrobotics/ice/v2 v2.3.38
 	golang.org/x/net v0.22.0
 )
 
