@@ -11,9 +11,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/logging"
 	"github.com/pion/stun"
+	"github.com/viamrobotics/ice/v2"
 )
 
 // ICEGatherer gathers local host, server reflexive and relay
@@ -28,7 +28,7 @@ type ICEGatherer struct {
 	validatedServers []*stun.URI
 	gatherPolicy     ICETransportPolicy
 
-	agent *ice.Agent
+	agent atomic.Pointer[ice.Agent]
 
 	onLocalCandidateHandler atomic.Value // func(candidate *ICECandidate)
 	onStateChangeHandler    atomic.Value // func(state ICEGathererState)
@@ -67,7 +67,7 @@ func (g *ICEGatherer) createAgent() error {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
-	if g.agent != nil || g.State() != ICEGathererStateNew {
+	if g.agent.Load() != nil || g.State() != ICEGathererStateNew {
 		return nil
 	}
 
@@ -140,7 +140,7 @@ func (g *ICEGatherer) createAgent() error {
 		return err
 	}
 
-	g.agent = agent
+	g.agent.Store(agent)
 	return nil
 }
 
@@ -150,7 +150,7 @@ func (g *ICEGatherer) Gather() error {
 		return err
 	}
 
-	agent := g.getAgent()
+	agent := g.agent.Load()
 	// it is possible agent had just been closed
 	if agent == nil {
 		return fmt.Errorf("%w: unable to gather", errICEAgentNotExist)
@@ -203,20 +203,21 @@ func (g *ICEGatherer) close(shouldGracefullyClose bool) error {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
-	if g.agent == nil {
+	agent := g.agent.Load()
+	if agent == nil {
 		return nil
 	}
 	if shouldGracefullyClose {
-		if err := g.agent.GracefulClose(); err != nil {
+		if err := agent.GracefulClose(); err != nil {
 			return err
 		}
 	} else {
-		if err := g.agent.Close(); err != nil {
+		if err := agent.Close(); err != nil {
 			return err
 		}
 	}
 
-	g.agent = nil
+	g.agent.Store(nil)
 	g.setState(ICEGathererStateClosed)
 
 	return nil
@@ -228,7 +229,7 @@ func (g *ICEGatherer) GetLocalParameters() (ICEParameters, error) {
 		return ICEParameters{}, err
 	}
 
-	agent := g.getAgent()
+	agent := g.agent.Load()
 	// it is possible agent had just been closed
 	if agent == nil {
 		return ICEParameters{}, fmt.Errorf("%w: unable to get local parameters", errICEAgentNotExist)
@@ -252,7 +253,7 @@ func (g *ICEGatherer) GetLocalCandidates() ([]ICECandidate, error) {
 		return nil, err
 	}
 
-	agent := g.getAgent()
+	agent := g.agent.Load()
 	// it is possible agent had just been closed
 	if agent == nil {
 		return nil, fmt.Errorf("%w: unable to get local candidates", errICEAgentNotExist)
@@ -290,14 +291,8 @@ func (g *ICEGatherer) setState(s ICEGathererState) {
 	}
 }
 
-func (g *ICEGatherer) getAgent() *ice.Agent {
-	g.lock.RLock()
-	defer g.lock.RUnlock()
-	return g.agent
-}
-
 func (g *ICEGatherer) collectStats(collector *statsReportCollector) {
-	agent := g.getAgent()
+	agent := g.agent.Load()
 	if agent == nil {
 		return
 	}

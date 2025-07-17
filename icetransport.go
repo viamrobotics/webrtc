@@ -13,8 +13,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/viamrobotics/ice/v2"
 	"github.com/pion/logging"
+	"github.com/viamrobotics/ice/v2"
 	"github.com/viamrobotics/webrtc/v3/internal/mux"
 	"github.com/viamrobotics/webrtc/v3/internal/util"
 )
@@ -47,7 +47,7 @@ type ICETransport struct {
 // GetSelectedCandidatePair returns the selected candidate pair on which packets are sent
 // if there is no selected pair nil is returned
 func (t *ICETransport) GetSelectedCandidatePair() (*ICECandidatePair, error) {
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return nil, nil //nolint:nilnil
 	}
@@ -98,7 +98,7 @@ func (t *ICETransport) Start(gatherer *ICEGatherer, params ICEParameters, role *
 		return err
 	}
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return fmt.Errorf("%w: unable to start ICETransport", errICEAgentNotExist)
 	}
@@ -179,7 +179,7 @@ func (t *ICETransport) restart() error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return fmt.Errorf("%w: unable to restart ICETransport", errICEAgentNotExist)
 	}
@@ -277,7 +277,7 @@ func (t *ICETransport) SetRemoteCandidates(remoteCandidates []ICECandidate) erro
 		return err
 	}
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return fmt.Errorf("%w: unable to set remote candidates", errICEAgentNotExist)
 	}
@@ -316,7 +316,7 @@ func (t *ICETransport) AddRemoteCandidate(remoteCandidate *ICECandidate) error {
 		}
 	}
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return fmt.Errorf("%w: unable to add remote candidates", errICEAgentNotExist)
 	}
@@ -355,7 +355,7 @@ func (t *ICETransport) newEndpoint(f mux.MatchFunc) *mux.Endpoint {
 func (t *ICETransport) ensureGatherer() error {
 	if t.gatherer == nil {
 		return errICEGathererNotStarted
-	} else if t.gatherer.getAgent() == nil {
+	} else if t.gatherer.agent.Load() == nil {
 		if err := t.gatherer.createAgent(); err != nil {
 			return err
 		}
@@ -389,7 +389,7 @@ func (t *ICETransport) haveRemoteCredentialsChange(newUfrag, newPwd string) bool
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return false
 	}
@@ -406,7 +406,7 @@ func (t *ICETransport) setRemoteCredentials(newUfrag, newPwd string) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	agent := t.gatherer.getAgent()
+	agent := t.gatherer.agent.Load()
 	if agent == nil {
 		return fmt.Errorf("%w: unable to SetRemoteCredentials", errICEAgentNotExist)
 	}
